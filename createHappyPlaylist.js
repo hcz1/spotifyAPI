@@ -56,25 +56,28 @@ const fs = require("fs");
   );
   // FILTER TRACKS VALENCE TO 0.6 OR OVER
   const filteredByValenceURI = allTracksURIValence.map(chunk =>
-    chunk.filter(({ valence }) => valence >= 0.6)
+    chunk.filter(({ valence }) => valence >= 0.8)
   );
   const flattenValenceURI = flatMap(filteredByValenceURI);
-  // RE CHUNK TO MINIMISE REQUETS
-  const valenceChunk = chunkby100(flattenValenceURI);
 
-  const mapValenceFilteredToURI = valenceChunk.map(chunk =>
-    chunk.map(({ uri }) => uri)
-  );
+  const mapValenceFilteredToURI = flattenValenceURI.map(({ uri }) => uri);
+  const filterDupUris = mapValenceFilteredToURI.reduce((prev, curr) => {
+    if (!prev.includes(curr)) prev.push(curr);
+    return prev;
+  }, []);
+  // console.log(filterDupUris);
+  // RE CHUNK TO MINIMISE REQUETS
+  const uriChunk = chunkby100(filterDupUris);
 
   // GET USER ID FOR PLAYLIST CREATION
   const { id: userID } = await spotifyUserApi.then(api => api.me());
   // CREATE PLAYLIST
   const { name: playlistName, id: playlistID } = await api.createPlaylist({
-    playlistName: "Happy",
+    playlistName: "Very Happy",
     userID,
   });
   await Promise.all(
-    mapValenceFilteredToURI.map(
+    uriChunk.map(
       async uriArr =>
         await api.addTracksToPlaylist({
           playlistID,
